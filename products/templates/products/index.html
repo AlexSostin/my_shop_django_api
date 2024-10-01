@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .form-container {
+            margin-bottom: 100px;
+        }
+        .alert-container {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .rounded-circle {
+            width: 100px;
+            height: 100px;
+            object-fit: cover; /* Убедимся, что изображение внутри круга не искажается */
+        }
+        footer {
+            background-color: #f8f9fa;
+            padding: 20px 0;
+            text-align: center;
+        }
+        header {
+            background-color: #007bff;
+            padding: 15px 0;
+            color: white;
+            text-align: center;
+        }
+        .carousel-item {
+            text-align: center;
+        }
+        .category-icon {
+            margin: 10px;
+            cursor: pointer;
+        }
+        /* Изменяем цвет фона и иконки стрелок */
+        .carousel-control-prev-icon,
+        .carousel-control-next-icon {
+            background-color: rgb(0, 0, 0);
+        }
+        .carousel-control-prev,
+        .carousel-control-next {
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+        }
+        .category-icon h5 {
+            margin-top: 10px;
+        }
+        .card-img-top {
+            width: 100px;
+            height: 200px;
+            object-fit: cover;
+            margin: 0 auto;
+        }
+        /* Mobile-friendly adjustments */
+        @media (max-width: 768px) {
+            .carousel-control-prev-icon,
+            .carousel-control-next-icon {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <h1>Welcome to the Store</h1>
+            <nav class="nav justify-content-center">
+                <a href="/" class="nav-link text-light">Home</a>
+                <a href="/categories" class="nav-link text-light">Categories</a>
+                <a href="/products" class="nav-link text-light">Products</a>
+                <a href="/about" class="nav-link text-light">About Us</a>
+                <a href="/products/add/" class="nav-link text-light">Add Product</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container mt-5">
+        <div class="alert-container"></div>
+        <h1 class="mb-4 text-center">Category List</h1>
+        
+        <!-- Popular Categories Section as Carousel -->
+        <div id="categoryCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+            <div class="carousel-inner" id="carousel-inner"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#categoryCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#categoryCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+
+        <h1 class="mb-4 text-center">Product List</h1>
+        <div id="product-list" class="row g-3 mb-4"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 Your Store. All Rights Reserved.</p>
+            <nav class="nav justify-content-center">
+                <a href="/privacy" class="nav-link">Privacy Policy</a>
+                <a href="/terms" class="nav-link">Terms of Service</a>
+            </nav>
+        </div>
+    </footer>
+
+    <script>
+        const HOST = 'http://127.0.0.1:8000';
+
+        async function fetchCategories() {
+            try {
+                const { data: categories } = await axios.get(`${HOST}/api/categories/`);
+                if (categories.length === 0) {
+                    showAlert('No categories available', 'info');
+                    return;
+                }
+                populateCategoryCarousel(categories);
+            } catch (error) {
+                showAlert('Error fetching categories', 'danger');
+            }
+        }
+
+        function populateCategoryCarousel(categories) {
+            const carouselInner = document.getElementById('carousel-inner');
+            carouselInner.innerHTML = '';
+
+            if (categories.length === 0) {
+                carouselInner.innerHTML = '<p>No categories available</p>';
+                return;
+            }
+
+            categories.forEach((category, index) => {
+                const isActive = index === 0 ? 'active' : '';
+                carouselInner.innerHTML += `
+                    <div class="carousel-item ${isActive}">
+                        <div class="category-icon text-center" onclick="navigateToCategory(${category.id})">
+                            <img src="${category.image ? category.image : '/static/images/default.png'}" class="rounded-circle" alt="${category.name}">
+                            <h5>${category.name}</h5>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function navigateToCategory(categoryId) {
+            window.location.href = `/categories/?category_id=${categoryId}`;
+        }
+
+        async function fetchProducts() {
+            try {
+                const { data: products } = await axios.get(`${HOST}/api/products/`);
+                populateProductList(products);
+            } catch (error) {
+                showAlert('Error fetching products', 'danger');
+            }
+        }
+
+        function populateProductList(products) {
+            const productList = document.getElementById('product-list');
+            productList.innerHTML = '';
+
+            if (products.length === 0) {
+                productList.innerHTML = '<p>No products available</p>';
+                return;
+            }
+
+            products.forEach(product => {
+                productList.innerHTML += `
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <img src="${product.image ? product.image : '/static/images/default.png'}" class="card-img-top" alt="${product.name}">
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/products/${product.id}/">${product.name}</a></h5>
+                                <p class="card-text">${product.description}</p>
+                                <p class="card-text"><strong>Price:</strong> $${product.price}</p>
+                                <p class="card-text"><strong>Category:</strong> ${product.category ? product.category.name : 'No Category'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCategories();
+            fetchProducts();
+        });
+
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.querySelector('.alert-container');
+            const alertElement = document.createElement('div');
+            alertElement.className = `alert alert-${type} alert-dismissible fade show`;
+            alertElement.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            alertContainer.appendChild(alertElement);
+
+            setTimeout(() => {
+                alertElement.classList.remove('show');
+                setTimeout(() => alertElement.remove(), 150);
+            }, 3000);
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

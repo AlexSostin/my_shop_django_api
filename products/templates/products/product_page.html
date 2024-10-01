@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4 text-center">{{ product.name }}</h1>
+
+    <!-- Display the product as a card -->
+    <div class="card mx-auto" style="width: 18rem;">
+        <div class="text-center">
+            {% if product.image %}
+            <img
+                src="{{ product.image.url }}"
+                class="card-img-top img-fluid"
+                alt="{{ product.name }}"
+                style="width: 150px; height: auto; object-fit: cover; margin-top: 15px;" <!-- Уменьшаем изображение -->
+            {% else %}
+            <img
+                src="/static/images/default.png"
+                class="card-img-top img-fluid"
+                alt="No image available"
+                style="width: 150px; height: auto; object-fit: cover; margin-top: 15px;" <!-- Уменьшаем изображение -->
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">{{ product.name }}</h5>
+            <p class="card-text"><strong>Description:</strong> {{ product.description }}</p>
+            <p class="card-text"><strong>Price:</strong> ${{ product.price }}</p>
+
+            <!-- Category Check -->
+            <p class="card-text">
+                <strong>Category:</strong>
+                {% if product.category %}
+                <a href="{% url 'category_filter_view' %}?category_id={{ product.category.id }}">{{ product.category.name }}</a>
+                {% else %}
+                No Category
+                {% endif %}
+            </p>
+
+            <!-- Edit and Delete Buttons -->
+            <a href="{% url 'edit_product_view' product.id %}" class="btn btn-secondary">Edit</a>
+            <button class="btn btn-danger" id="delete-btn">Delete</button>
+        </div>
+    </div>
+
+    <!-- Navigation buttons -->
+    <div class="d-flex justify-content-between mt-5">
+        <a href="{% url 'product_list_view' %}" class="btn btn-primary">Back to Products</a>
+        <button onclick="window.history.back()" class="btn btn-secondary">&larr; Back</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById("delete-btn").addEventListener("click", function() {
+        deleteProduct({{ product.id }});
+    });
+
+    // Function to delete the product
+    function deleteProduct(productId) {
+        if (confirm("Are you sure you want to delete this product?")) {
+            axios({
+                method: "delete",
+                url: `/api/products/${productId}/`,
+                headers: {
+                    "X-CSRFToken": getCSRFToken(),
+                },
+            })
+                .then(() => {
+                    alert("Product deleted successfully!");
+                    window.location.href = "{% url 'product_list_view' %}"; // Redirect to product list after deletion
+                })
+                .catch((error) => {
+                    console.error("Error deleting product:", error);
+                    alert("Failed to delete product.");
+                });
+        }
+    }
+
+    // Function to get CSRF token if needed
+    function getCSRFToken() {
+        let cookieValue = null;
+        const name = "csrftoken";
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === name + "=") {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

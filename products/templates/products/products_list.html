@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Product List{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4 text-center">Product List</h1>
+
+    <!-- Форма для фильтрации по категориям -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <label for="category-select" class="form-label">Filter by Category:</label>
+            <select id="category-select" class="form-select" onchange="updateUrl()">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {% if selected_category_id == category.id|stringformat:"s" %} selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Форма для сортировки -->
+        <div class="col-md-6">
+            <label for="sort-select" class="form-label">Sort by:</label>
+            <select id="sort-select" class="form-select" onchange="updateUrl()">
+                <option value="name" {% if sort_param == 'name' %}selected{% endif %}>Name</option>
+                <option value="price" {% if sort_param == 'price' %}selected{% endif %}>Price</option>
+                <option value="category" {% if sort_param == 'category' %}selected{% endif %}>Category</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Список продуктов -->
+    <div id="product-list" class="row g-3 mb-4">
+        {% for product in products %}
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text">{{ product.description }}</p>
+                    <p class="card-text"><strong>Price:</strong> ${{ product.price }}</p>
+                    <a href="{% url 'product_detail_view' product.id %}" class="btn btn-primary">View Product</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function updateUrl() {
+        const categoryId = document.getElementById('category-select').value;
+        const sortParam = document.getElementById('sort-select').value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('category_id', categoryId);
+        url.searchParams.set('sort', sortParam);
+        window.location.href = url.href;
+    }
+</script>
+{% endblock %}

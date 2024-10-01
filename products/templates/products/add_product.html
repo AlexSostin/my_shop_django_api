@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Product{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4 text-center">Add a New Product</h1>
+    <form id="product-form" class="row g-3" enctype="multipart/form-data">
+        <div class="col-md-6">
+            <label for="productName" class="form-label">Name</label>
+            <input type="text" class="form-control" id="productName" placeholder="Enter product name" required />
+        </div>
+        <div class="col-md-6">
+            <label for="productPrice" class="form-label">Price</label>
+            <input type="number" class="form-control" id="productPrice" placeholder="Enter price" step="0.01" required />
+        </div>
+        <div class="col-12">
+            <label for="productDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="productDescription" placeholder="Enter product description" rows="4" required></textarea>
+        </div>
+        <div class="col-md-6">
+            <label for="product-category" class="form-label">Category</label>
+            <select id="product-category" class="form-select" required>
+                <!-- Options dynamically loaded -->
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="image" class="form-label">Image</label>
+            <input type="file" class="form-control" id="image" accept="image/*" />
+        </div>
+        
+        <div class="col-12 d-flex justify-content-between">
+            <button type="submit" class="btn btn-success" id="add-button">Add Product</button>
+            <div>
+                <a href="{% url 'home' %}" class="btn btn-secondary me-2">Back to Home</a>
+                <a href="{% url 'product_list_view' %}" class="btn btn-primary">Main Menu</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
