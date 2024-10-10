@@ -26,7 +26,16 @@
                 <tbody>
                     {% for item in cart_items %}
                     <tr data-item-id="{{ item.id }}">
-                        <td>{{ item.name }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if item.image_url %}
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-thumbnail me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-secondary me-3" style="width: 50px; height: 50px;"></div>
+                                {% endif %}
+                                <span>{{ item.name }}</span>
+                            </div>
+                        </td>
                         <td>${{ item.price|floatformat:2 }}</td>
                         <td>
                             <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="item-quantity">
@@ -139,13 +148,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function removeCartItem(itemId) {
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        fetch(`/cart/remove/${itemId}/`, {
+        fetch(`/remove-from-cart/${itemId}/`, {  // Изменено здесь
             method: 'POST',
             headers: {
                 'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/json',
             },
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 const row = document.querySelector(`tr[data-item-id="${itemId}"]`);

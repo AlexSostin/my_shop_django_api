@@ -56,6 +56,10 @@ class Product(models.Model):
         from django.urls import reverse
         return reverse('product_detail_view', args=[str(self.id)])
 
+    @property
+    def image_url(self):
+        return self.image.url if self.image else ''
+
 class CartItem(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

@@ -44,7 +44,8 @@ class Cart:
             cart[str(product.id)]['product'] = {
                 'id': product.id,
                 'name': product.name,
-                'price': float(product.price)
+                'price': float(product.price),
+                'image': product.image_url if product.image else ''  # Добавляем URL изображения
             }
         for item in cart.values():
             item['total_price'] = float(item['price']) * item['quantity']

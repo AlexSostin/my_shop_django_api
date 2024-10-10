@@ -408,33 +408,32 @@ def add_to_cart(request, product_id):
 @require_POST
 def remove_from_cart(request, item_id):
     cart = Cart(request)
-    try:
-        cart.remove(item_id)
-       
-        cart_items = []
-        for item in cart:
-            product_data = item['product']
-            cart_items.append({
-                'id': product_data['id'],
-                'name': product_data['name'],
-                'price': float(product_data['price']),
-                'quantity': item['quantity'],
-                'total_price': float(item['total_price']),
-            })
-        
-        subtotal = float(cart.get_total_price())
-        tax = float(subtotal * 0.10)
-        total = float(subtotal + tax)
-
-        return JsonResponse({
-            'success': True,
-            'cart_items': cart_items,
-            'subtotal': subtotal,
-            'tax': tax,
-            'total': total,
+    product = get_object_or_404(Product, id=item_id)
+    cart.remove(product)
+    
+    cart_items = []
+    for item in cart:
+        product_data = item['product']
+        cart_items.append({
+            'id': product_data['id'],
+            'name': product_data['name'],
+            'price': float(product_data['price']),
+            'quantity': item['quantity'],
+            'total_price': item['total_price'],
+            'image_url': product_data.get('image', ''),
         })
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    subtotal = cart.get_total_price()
+    tax = subtotal * 0.10  # Предполагаем 10% налог
+    total = subtotal + tax
+
+    return JsonResponse({
+        'success': True,
+        'cart_items': cart_items,
+        'subtotal': float(subtotal),
+        'tax': float(tax),
+        'total': float(total),
+    })
 
 def calculate_cart_totals(cart_items):
     subtotal = sum(item.total_price() for item in cart_items)
@@ -446,13 +445,14 @@ def cart_view(request):
     cart = Cart(request)
     cart_items = []
     for item in cart:
-        product_data = item['product']  # Это теперь словарь
+        product_data = item['product']  # Это словарь
         cart_item = {
             'id': product_data['id'],
             'name': product_data['name'],
             'price': float(product_data['price']),
             'quantity': item['quantity'],
             'total_price': item['total_price'],
+            'image_url': product_data.get('image', ''),  # Добавляем URL изображения
         }
         cart_items.append(cart_item)
         logger.debug(f"Added cart item: {cart_item}")
@@ -719,3 +719,4 @@ def create_product(request):
 def add_product(request):
     # Логика добавления продукта
     return render(request, 'products/add_product.html')
+

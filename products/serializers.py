@@ -14,10 +14,11 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category_id = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), source='category')
     category_name = serializers.CharField(source='category.name', read_only=True)
+    image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'category_id', 'category_name', 'image', 'featured']
+        fields = ['id', 'name', 'description', 'price', 'category_id', 'category_name', 'image', 'featured', 'image_url']
 
     def create(self, validated_data):
         logger.info(f"Creating product with data: {validated_data}")
@@ -30,3 +31,9 @@ class ProductSerializer(serializers.ModelSerializer):
             'name': instance.category.name
         }
         return representation
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.image:
+            return request.build_absolute_uri(obj.image.url)
+        return ''
