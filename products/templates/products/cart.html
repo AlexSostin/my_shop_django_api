@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Your Shopping Cart{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Your Shopping Cart</h1>
+    {% csrf_token %}
+    {% if cart_empty %}
+        <div class="alert alert-info" role="alert">
+            Your cart is empty. <a href="{% url 'products_list' %}">Continue shopping</a>
+        </div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                    <tr data-item-id="{{ item.id }}">
+                        <td>{{ item.name }}</td>
+                        <td>${{ item.price|floatformat:2 }}</td>
+                        <td>
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="item-quantity">
+                        </td>
+                        <td class="item-total">${{ item.total_price|floatformat:2 }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger remove-item" data-item-id="{{ item.id }}">Remove</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-active">
+                        <td colspan="3" class="text-right"><strong>Subtotal:</strong></td>
+                        <td colspan="2"><strong id="subtotal">${{ subtotal|floatformat:2 }}</strong></td>
+                    </tr>
+                    <tr class="table-active">
+                        <td colspan="3" class="text-right"><strong>Tax (10%):</strong></td>
+                        <td colspan="2"><strong id="tax">${{ tax|floatformat:2 }}</strong></td>
+                    </tr>
+                    <tr class="table-active">
+                        <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                        <td colspan="2"><strong id="total">${{ total|floatformat:2 }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'products_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Continue Shopping
+            </a>
+            <a href="{% url 'checkout' %}" class="btn btn-primary">
+                Proceed to Checkout <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded');
+    const quantityInputs = document.querySelectorAll('.item-quantity');
+    const removeButtons = document.querySelectorAll('.remove-item');
+    console.log('Quantity inputs found:', quantityInputs.length);
+    console.log('Remove buttons found:', removeButtons.length);
+
+    if (quantityInputs.length === 0) {
+        console.error('No quantity inputs found. Check your HTML structure.');
+        console.log('Cart items:', document.querySelectorAll('tr[data-item-id]').length);
+        console.log('HTML content:', document.querySelector('.table-responsive').innerHTML);
+    }
+
+    quantityInputs.forEach(input => {
+        input.addEventListener('change', function(event) {
+            const itemId = this.closest('tr').dataset.itemId;
+            const quantity = parseInt(this.value, 10);
+            if (isNaN(quantity) || quantity < 1) {
+                console.error('Invalid quantity:', quantity);
+                showAlert('Quantity must be a positive number', 'danger');
+                this.value = 1;
+                return;
+            }
+            updateCartItem(itemId, quantity);
+        });
+    });
+
+    removeButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            const itemId = this.dataset.itemId;
+            removeCartItem(itemId);
+        });
+    });
+
+    function updateCartItem(itemId, quantity) {
+        console.log(`Updating cart item ${itemId} with quantity ${quantity}`);
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        fetch(`/cart/update/${itemId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            },
+            body: JSON.stringify({ quantity: quantity })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json().then(data => {
+                if (!response.ok) {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+                return data;
+            });
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                updateCartDisplay(data);
+                showAlert('Cart updated successfully', 'success');
+            } else {
+                showAlert('Error updating cart: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred while updating the cart: ' + error.message, 'danger');
+        });
+    }
+
+    function removeCartItem(itemId) {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        fetch(`/cart/remove/${itemId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+                if (row) row.remove();
+                updateCartDisplay(data);
+                showAlert('Item removed from cart', 'success');
+            } else {
+                showAlert('Error removing item: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred while removing the item', 'danger');
+        });
+    }
+
+    function updateCartDisplay(data) {
+        data.cart_items.forEach(item => {
+            const row = document.querySelector(`tr[data-item-id="${item.id}"]`);
+            if (row) {
+                row.querySelector('.item-quantity').value = item.quantity;
+                // Преобразуем total_price в число перед использованием toFixed
+                const totalPrice = parseFloat(item.total_price);
+                row.querySelector('.item-total').textContent = `$${totalPrice.toFixed(2)}`;
+            }
+        });
+
+        // Также преобразуем subtotal, tax и total в числа
+        const subtotal = parseFloat(data.subtotal);
+        const tax = parseFloat(data.tax);
+        const total = parseFloat(data.total);
+
+        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+        document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+
+        if (data.cart_items.length === 0) {
+            location.reload(); // Перезагрузить страницу, если корзина пуста
+        }
+    }
+
+    function showAlert(message, type) {
+        const alertContainer = document.querySelector('.alert-container');
+        if (!alertContainer) {
+            console.error('Alert container not found');
+            return;
+        }
+        const alertElement = document.createElement('div');
+        alertElement.className = `alert alert-${type} alert-dismissible fade show`;
+        alertElement.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        alertContainer.appendChild(alertElement);
+
+        setTimeout(() => {
+            alertElement.classList.remove('show');
+            setTimeout(() => alertElement.remove(), 150);
+        }, 3000);
+    }
+});
+</script>
+{% endblock %}

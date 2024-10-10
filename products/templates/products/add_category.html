@@ -1,34 +1,88 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Category</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-5">
-        <h1>Add New Category</h1>
-        
-        <form method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="name" class="form-label">Category Name</label>
-                <input type="text" class="form-control" id="name" name="name" required>
-            </div>
-            <div class="mb-3">
-                <label for="description" class="form-label">Category Description</label>
-                <textarea class="form-control" id="description" name="description" required></textarea>
-            </div>
-            <div class="mb-3">
-                <label for="image" class="form-label">Category Image</label>
-                <input type="file" class="form-control" id="image" name="image" accept="image/*">
-            </div>
-            <button type="submit" class="btn btn-success">Add Category</button>
-            <a href="{% url 'category_filter_view' %}" class="btn btn-secondary">Cancel</a>
-        </form>
-    </div>
+{% extends 'base.html' %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+{% block title %}Add Category{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Add New Category</h1>
+    
+    {% if form.errors %}
+    <div class="alert alert-danger" role="alert">
+        Please correct the following errors:
+        <ul>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div id="image-preview" class="mb-3"></div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> Add Category
+            </button>
+            <a href="{% url 'category_filter_view' %}" class="btn btn-secondary" id="cancel-btn">
+                <i class="fas fa-times-circle"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+<script>
+    // Image preview
+    document.getElementById('id_image').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.createElement('img');
+                preview.src = e.target.result;
+                preview.style.maxWidth = '200px';
+                preview.style.marginTop = '10px';
+                const container = document.getElementById('image-preview');
+                container.innerHTML = '';
+                container.appendChild(preview);
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Confirmation before canceling
+    const form = document.querySelector('form');
+    const cancelBtn = document.getElementById('cancel-btn');
+    
+    cancelBtn.addEventListener('click', function(e) {
+        const formInputs = form.querySelectorAll('input:not([type="hidden"]):not([type="submit"]), textarea');
+        let isFormFilled = false;
+        
+        formInputs.forEach(input => {
+            if (input.value.trim() !== '') {
+                isFormFilled = true;
+            }
+        });
+
+        if (isFormFilled) {
+            if (!confirm('Are you sure you want to cancel? All entered data will be lost.')) {
+                e.preventDefault();
+            }
+        }
+    });
+</script>
+{% endblock %}

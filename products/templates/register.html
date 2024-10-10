@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create an Account{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    .form-control:focus {
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
+    }
+    .btn-primary {
+        background-color: #4CAF50;
+        border-color: #4CAF50;
+        transition: all 0.3s;
+    }
+    .btn-primary:hover {
+        background-color: #45a049;
+        border-color: #45a049;
+    }
+    .card {
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        border-radius: 15px;
+    }
+    .card-title {
+        color: #4CAF50;
+    }
+    .password-toggle {
+        cursor: pointer;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        background: none;
+        border: none;
+        padding: 0;
+    }
+    .password-toggle:focus {
+        outline: none;
+    }
+    .password-toggle:hover {
+        color: #4CAF50;
+    }
+    .alert {
+        position: relative;
+        padding-right: 30px;
+    }
+    .alert .close {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0.75rem 1.25rem;
+        color: inherit;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        line-height: 1;
+        opacity: .5;
+        transition: opacity .15s;
+    }
+    .alert .close:hover {
+        opacity: 1;
+    }
+    .input-group {
+        position: relative;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body p-5">
+                    <h2 class="card-title text-center mb-4">Create an Account</h2>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                <div class="input-group">
+                                    {{ field }}
+                                    {% if field.name == 'password1' or field.name == 'password2' %}
+                                        <button type="button" class="password-toggle" onclick="togglePassword('{{ field.id_for_label }}', this)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                {% for error in field.errors %}
+                                    <div class="alert alert-danger mt-2">
+                                        {{ error }}
+                                        <button type="button" class="close" onclick="this.parentElement.style.display='none';">&times;</button>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">Register</button>
+                        </div>
+                    </form>
+                    <div class="mt-4 text-center">
+                        Already have an account? <a href="{% url 'login' %}" class="text-primary">Log in</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function togglePassword(fieldId, button) {
+        var field = document.getElementById(fieldId);
+        var icon = button.querySelector('i');
+        if (field.type === "password") {
+            field.type = "text";
+            icon.classList.remove("fa-eye");
+            icon.classList.add("fa-eye-slash");
+        } else {
+            field.type = "password";
+            icon.classList.remove("fa-eye-slash");
+            icon.classList.add("fa-eye");
+        }
+    }
+
+    // Автоматическое скрытие сообщений об ошибках через 10 секунд
+    document.addEventListener('DOMContentLoaded', function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                alert.style.display = 'none';
+            }, 10000);
+        });
+    });
+</script>
+{% endblock %}
